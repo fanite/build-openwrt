@@ -14,7 +14,7 @@
 - luci-app-pushbot          #推送
 - luci-app-qos              #流量服务质量(QoS)流控
 - luci-app-ramfree          #释放内存
-- luci-app-clone            #命令行云端同步工具
+- ~~luci-app-clone            #命令行云端同步工具~~
 - luci-app-samba            #网络共享（Samba）
 - luci-app-syncdial         #多拨虚拟网卡         
 - luci-app-turboacc         #TurboACC网络加速
