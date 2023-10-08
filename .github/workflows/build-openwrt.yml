@@ -94,8 +94,19 @@ jobs:
           mv rm2100.config openwrt/.config
           sed -i 's/192.168.1.1/192.168.1.3/g' openwrt/package/base-files/files/bin/config_generate
         fi
-        sed -i '/default_radio${devidx}.encryption/a \                        set wireless.default_radio${devidx}.key=mn5e2kmg\n                        set wireless.default_radio${devidx}.ieee80211k=1\n                        set wireless.default_radio${devidx}.ieee80211v=1' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
-
+        sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc >>/dev/null
+        sed -i 's/root:::0:99999:7:::/root:$1$OR/e/lZS$5uicyTzUtJmk2Bqbqc.g3.:19633:0:99999:7:::' openwrt/package/base-files/files/etc/passwd >>/dev/null
+        sed -i 's/root:::0:99999:7:::/root:$1$OR/e/lZS$5uicyTzUtJmk2Bqbqc.g3.:19633:0:99999:7:::' openwrt/package/base-files/files/etc/shadow >>/dev/null
+        sed -i 's/set wireless.default_radio${devidx}.encryption=none/set wireless.default_radio${devidx}.encryption=psk-mixed' >>/dev/null
+        sed -i '/default_radio${devidx}.encryption/a \                        set wireless.default_radio${devidx}.key=mn5e2kmg\n                        set wireless.default_radio${devidx}.ieee80211k=1\n                        set wireless.default_radio${devidx}.ieee80211v=1' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh >>/dev/null
+        echo "------------------检查配置----------------------------"
+        cat openwrt/.config
+        echo "------------------检查Turbo Acc配置----------------------------"
+        cat openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc
+        echo "------------------检查默认IP----------------------------"
+        cat openwrt/package/base-files/files/bin/config_generate
+        echo "------------------检查默认IP----------------------------"
+        cat openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
 
     - name: Download package
       id: package
@@ -112,9 +123,9 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
-        echo "::set-output name=status::success"
+        echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
+        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_OUTPUT
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
     - name: Check space usage
@@ -125,7 +136,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: OpenWrt_bin${{ steps.compile.outputs.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
 
     - name: Organize files
@@ -134,12 +145,12 @@ jobs:
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        echo "::set-output name=status::success"
+        echo "FIRMWARE=$PWD" >> $GITHUB_OUTPUT
+        echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware directory
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE }}
+        name: OpenWrt_firmware${{ steps.compile.outputs.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: steps.organize.outputs.FIRMWARE
