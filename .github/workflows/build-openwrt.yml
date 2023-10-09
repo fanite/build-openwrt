@@ -94,7 +94,7 @@ jobs:
           sed -i 's/192.168.1.1/192.168.1.4/g' openwrt/package/base-files/files/bin/config_generate
         elif [[ "${targets}" == "rm2100" && -e rm2100.config ]]; then
           mv rm2100.config openwrt/.config
-          positionLineNum=sed -n '/define Device\/xiaomi_redmi-router-ac2100/=' openwrt/target/linux/ramips/image/mt7621.mk
+          positionLineNum=$(sed -n '/define Device\/xiaomi_redmi-router-ac2100/=' openwrt/target/linux/ramips/image/mt7621.mk)
           offsetLine=$(tail -n+$positionLineNum openwrt/target/linux/ramips/image/mt7621.mk | grep -nm1 'DEVICE_PACKAGES')
           offsetLineNum=${offsetLine%:*}
           lineNum=$positionLineNum+$offsetLineNum-1
