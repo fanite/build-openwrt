@@ -98,7 +98,7 @@ jobs:
           offsetLine=$(tail -n+$positionLineNum openwrt/target/linux/ramips/image/mt7621.mk | grep -nm1 'DEVICE_PACKAGES')
           offsetLineNum=${offsetLine%:*}
           lineNum=$positionLineNum+$offsetLineNum-1
-          sed -i '${lineNum} s/kmod-mt7603e kmod-mt7615d luci-app-mtwifi/kmod-mt7603 kmod-mt76x2/' openwrt/target/linux/ramips/image/mt7621.mk
+          sed -i '${lineNum} s/kmod-mt7603e kmod-mt7615d luci-app-mtwifi/kmod-mt7603 kmod-mt7615-firmware/' openwrt/target/linux/ramips/image/mt7621.mk
           sed -i 's/192.168.1.1/192.168.1.3/g' openwrt/package/base-files/files/bin/config_generate
           echo "------------------检查WIFI驱动配置----------------------------"
           cat openwrt/target/linux/ramips/image/mt7621.mk
