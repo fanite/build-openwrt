@@ -95,10 +95,6 @@ jobs:
         elif [[ "${targets}" == "rm2100" && -e rm2100.config ]]; then
           mv rm2100.config openwrt/.config
           sed -i 's/192.168.1.1/192.168.1.3/g' openwrt/package/base-files/files/bin/config_generate
-          git clone https://github.com/openwrt/openwrt.git temp
-          rm -rf openwrt/package/network/services/hostapd
-          mv -f  temp/package/network/services/hostapd openwrt/package/network/services/
-          rm -rf temp/
         elif [[ "${targets}" == "rm2100-mt" && -e rm2100-mt.config ]]; then
           mv rm2100-mt.config openwrt/.config
           sed -i 's/192.168.1.1/192.168.1.3/g' openwrt/package/base-files/files/bin/config_generate
