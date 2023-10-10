@@ -28,12 +28,12 @@
 # Redmi AC2100
 - luci-app-accesscontrol    #访问时间控制
 - luci-app-adbyby-plus      #广告屏蔽大师Plus +
-- luci-app-aliyundrive-webdav #阿里云盘webdav
+- ~~luci-app-aliyundrive-webdav #阿里云盘webdav~~
 - luci-app-arpbind          #IP/MAC绑定
 - luci-app-autoreboot       #支持计划重启
 - luci-app-ddns             #动态域名 DNS
 - luci-app-eqos             #根据IP控制网速
-- luci-app-filetransfer     #文件传输
+- ~~luci-app-filetransfer     #文件传输~~
 - luci-app-firewall         #防火墙
 - luci-app-frpc             #内网穿透 Frp
 - luci-app-guest-wifi       #WiFi访客网络
