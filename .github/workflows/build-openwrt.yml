@@ -88,8 +88,8 @@ jobs:
 
         # 修改ROOT密码
         passwd=$(openssl passwd -salt 'OR/e/lZS' ${{inputs.password}})
-        sed -i "s/root:::0:99999:7:::/root:${ passwd }:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/passwd
-        sed -i "s/root:::0:99999:7:::/root:${ passwd }:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/shadow
+        sed -i "s/root:::0:99999:7:::/root:${passwd}:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/passwd
+        sed -i "s/root:::0:99999:7:::/root:${passwd}:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/shadow
 
         # 修改网关
         gateway=${{inputs.gateway}}
