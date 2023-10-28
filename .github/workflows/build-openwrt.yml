@@ -1,57 +1,53 @@
-#
-# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
-#
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
-#
-# https://github.com/P3TERX/Actions-OpenWrt
-# Description: Build OpenWrt using GitHub Actions
-#
-
 name: Build OpenWrt
 
 on:
   workflow_dispatch:
     inputs:
-      ssh:
-        description: 'SSH connection to Actions'
-        required: false
-        default: 'false'
+      device:
+        description: '要编译的设备型号'
+        required: true
+        default: 'RM2100'
+        type: choice
+        options:
+          - RM2100
+          - RM2100-MT
+          - MI-MINI
+          - PHICOMM-K3
+      password:
+        description: '登录密码和WiFi密码。'
+        type: string
+        default: 'password'
+      gateway:
+        description: '网关'
+        type: string
+        default: '192.168.1.1'
+      upload_bin:
+        description: '上传BIN文件夹'
+        type: boolean
+        default: true
+      upload_firmware:
+        description: '上传FIRMWARE文件夹'
+        type: boolean
+        default: true
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
-  UPLOAD_BIN_DIR: false
-  UPLOAD_FIRMWARE: true
-  UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
 
 jobs:
   build:
     runs-on: ubuntu-20.04
-    permissions:
-      contents: write
-    env:
-      targets: ${{ matrix.targets }}
-    strategy:
-      matrix:
-        include:
-          - targets: "mi-mini"
-          - targets: "rm2100"
-          - targets: "rm2100-mt"
-
     steps:
     - name: Checkout
       uses: actions/checkout@main
 
     - name: Initialization environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
       run: |
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq -y update  
-        sudo -E apt-get -qq -y install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+        sudo -E apt-get -qq -y install openssl ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
                                   bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib \
                                   git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev \
                                   libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz \
@@ -87,30 +83,39 @@ jobs:
 
     - name: Load custom configuration
       run: |
-        echo "当前Targetsw为${targets}"
-        if [[ "${targets}" == "mi-mini" && -e mi-mini.config ]]; then
-          mv mi-mini.config openwrt/.config
-          sed -i 's/192.168.1.1/192.168.50.4/g' openwrt/package/base-files/files/bin/config_generate
-        elif [[ "${targets}" == "rm2100" && -e rm2100.config ]]; then
-          mv rm2100.config openwrt/.config
-          sed -i 's/192.168.1.1/192.168.50.2/g' openwrt/package/base-files/files/bin/config_generate
-        elif [[ "${targets}" == "rm2100-mt" && -e rm2100-mt.config ]]; then
-          mv rm2100-mt.config openwrt/.config
-          sed -i 's/192.168.1.1/192.168.50.2/g' openwrt/package/base-files/files/bin/config_generate
+        # 拷贝配置文件
+        cp ${{inputs.device}}.config openwrt/.config
+
+        # 修改ROOT密码
+        passwd=$(openssl passwd -salt 'OR/e/lZS' ${{inputs.password}})
+        sed -i "s/root:::0:99999:7:::/root:${ passwd }:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/passwd
+        sed -i "s/root:::0:99999:7:::/root:${ passwd }:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/shadow
+
+        # 修改网关
+        gateway=${{inputs.gateway}}
+        if [[ $gateway != "192.168.1.1" ]]; then
+          sed -i 's/192.168.1/${gateway%.*}/g' openwrt/package/base-files/files/bin/config_generate
+          sed -i 's/${gateway%.*}.1/${gateway}/g' openwrt/package/base-files/files/bin/config_generate
         fi
-        sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc >>/dev/null
-        sed -i 's/root:::0:99999:7:::/root:$1$OR\/e\/lZS$5uicyTzUtJmk2Bqbqc.g3.:19633:0:99999:7:::/g' openwrt/package/base-files/files/etc/passwd >>/dev/null
-        sed -i 's/root:::0:99999:7:::/root:$1$OR\/e\/lZS$5uicyTzUtJmk2Bqbqc.g3.:19633:0:99999:7:::/g' openwrt/package/base-files/files/etc/shadow >>/dev/null
-        sed -i 's/set wireless.default_radio${devidx}.encryption=none/set wireless.default_radio${devidx}.encryption=psk-mixed/g' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh >>/dev/null
-        sed -i '/default_radio${devidx}.encryption/a \                        set wireless.default_radio${devidx}.key=mn5e2kmg\n                        set wireless.default_radio${devidx}.ieee80211k=1\n                        set wireless.default_radio${devidx}.ieee80211v=1' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh >>/dev/null
-        echo "------------------检查配置----------------------------"
-        cat openwrt/.config
-        echo "------------------检查Turbo Acc配置----------------------------"
-        cat openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc
-        echo "------------------检查默认IP----------------------------"
-        cat openwrt/package/base-files/files/bin/config_generate
-        echo "------------------检查默认IP----------------------------"
-        cat openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
+
+        # 默认开启Turboacc的BBR
+        if grep -q "^CONFIG_TARGET.*DEVICE.*=y" $PWD/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
+
+        # 修改WIFI配置
+        sed -i 's/set wireless.default_radio${devidx}.encryption=none/set wireless.default_radio${devidx}.encryption=psk-mixed/g' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
+        sed -i '/default_radio${devidx}.encryption/a \                        set wireless.default_radio${devidx}.key=${{inputs.password}}\n                        set wireless.default_radio${devidx}.ieee80211k=1\n                        set wireless.default_radio${devidx}.ieee80211v=1' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
+
+        if [[ ${{inputs.device}} == "PHICOMM-K3" ]]; then
+          # 替换WIFI驱动
+          cp -f files/brcmfmac4366c-pcie.bin.69027 openwrt/package/lean/k3-brcmfmac4366c-firmware/files/lib/firmware/brcm/brcmfmac4366c-pcie.bin
+          # 添加lwz322的K3屏幕插件
+          rm -rf openwrt/package/lean/luci-app-k3screenctrl
+          git clone https://github.com/yangxu52/luci-app-k3screenctrl.git openwrt/package/lean/luci-app-k3screenctrl
+          # 替换lwz322的K3屏幕驱动插件
+          rm -rf openwrt/package/lean/k3screenctrl
+          git clone https://github.com/yangxu52/k3screenctrl_build.git openwrt/package/lean/k3screenctrl/
+          sed -i 's/k3screenctrl$/k3screenctrl luci-app-k3screenctrl/' openwrt/target/linux/bcm53xx/image/Makefile
+        fi
 
     - name: Download package
       id: package
@@ -130,7 +135,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_OUTPUT
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_OUTPUT
 
     - name: Check space usage
       if: (!cancelled())
@@ -138,14 +143,14 @@ jobs:
 
     - name: Upload bin directory
       uses: actions/upload-artifact@main
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      if: steps.compile.outputs.status == 'success' && inputs.upload_bin
       with:
-        name: OpenWrt_bin${{ steps.compile.outputs.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: OpenWrt_bin${{ steps.compile.outputs.DEVICE_NAME }}${{ steps.compile.outputs.FILE_DATE }}
         path: openwrt/bin
 
     - name: Organize files
       id: organize
-      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      if: inputs.upload_firmware && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
@@ -156,5 +161,5 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_firmware${{ steps.compile.outputs.DEVICE_NAME }}_${{ env.targets }}${{ env.FILE_DATE }}
+        name: OpenWrt_firmware${{ steps.compile.outputs.DEVICE_NAME }}${{ steps.compile.outputs.FILE_DATE }}
         path: ${{ steps.organize.outputs.FIRMWARE }}
