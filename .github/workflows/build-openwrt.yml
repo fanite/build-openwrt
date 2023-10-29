@@ -24,7 +24,7 @@ on:
       upload_bin:
         description: '上传BIN文件夹'
         type: boolean
-        default: true
+        default: false
       upload_firmware:
         description: '上传FIRMWARE文件夹'
         type: boolean
@@ -99,7 +99,7 @@ jobs:
         fi
 
         # 默认开启Turboacc的BBR
-        if grep -q "^CONFIG_TARGET.*DEVICE.*=y" $PWD/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
+        if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" $PWD/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
 
         # 修改WIFI配置
         sed -i 's/set wireless.default_radio${devidx}.encryption=none/set wireless.default_radio${devidx}.encryption=psk-mixed/g' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
