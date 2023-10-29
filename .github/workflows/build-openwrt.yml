@@ -116,8 +116,8 @@ jobs:
           git clone https://github.com/yangxu52/k3screenctrl_build.git openwrt/package/lean/k3screenctrl/
           sed -i 's/k3screenctrl$/k3screenctrl luci-app-k3screenctrl/' openwrt/target/linux/bcm53xx/image/Makefile
           # 移除bcm53xx中的其他机型
-          sed -i '421,453d' target/linux/bcm53xx/image/Makefile
-          sed -i '140,412d' target/linux/bcm53xx/image/Makefile
+          sed -i '421,453d' openwrt/target/linux/bcm53xx/image/Makefile
+          sed -i '140,412d' openwrt/target/linux/bcm53xx/image/Makefile
         fi
 
     - name: Download package
