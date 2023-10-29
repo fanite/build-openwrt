@@ -22,6 +22,20 @@ on:
         description: '网关'
         type: string
         default: '192.168.1.1'
+      k3_wifidriver:
+        description: 'PHICOMM-K3的WIFI驱动'
+        default: 'asus-dhd24'
+        type: choice
+        options:
+          - '69027'
+          - ac88u_16
+          - ac88u_19
+          - ac88u_20
+          - asus-dhd24
+          - ea9500_175339
+          - ea9500_179240
+          - k3
+          - r8500
       upload_bin:
         description: '上传BIN文件夹'
         type: boolean
@@ -93,11 +107,7 @@ jobs:
         sed -i "s/root:::0:99999:7:::/root:${passwd}:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/shadow
 
         # 修改网关
-        gateway=${{inputs.gateway}}
-        if [[ $gateway != "192.168.1.1" ]]; then
-          sed -i 's/192.168.1/${gateway%.*}/g' openwrt/package/base-files/files/bin/config_generate
-          sed -i 's/${gateway%.*}.1/${gateway}/g' openwrt/package/base-files/files/bin/config_generate
-        fi
+        sed -i 's/192.168.1.1/${{inputs.gateway}}/g' openwrt/package/base-files/files/bin/config_generate
 
         # 默认开启Turboacc的BBR
         if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" $PWD/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
@@ -108,7 +118,7 @@ jobs:
 
         if [[ ${{inputs.device}} == "PHICOMM-K3" ]]; then
           # 替换WIFI驱动
-          cp -f files/brcmfmac4366c-pcie.bin.69027 openwrt/package/lean/k3-brcmfmac4366c-firmware/files/lib/firmware/brcm/brcmfmac4366c-pcie.bin
+          cp -f files/k3-wireless-driver/brcmfmac4366c-pcie.bin.${{inputs.k3_wifidriver}} openwrt/package/lean/k3-brcmfmac4366c-firmware/files/lib/firmware/brcm/brcmfmac4366c-pcie.bin
           # 添加lwz322的K3屏幕插件
           rm -rf openwrt/package/lean/luci-app-k3screenctrl
           git clone https://github.com/yangxu52/luci-app-k3screenctrl.git openwrt/package/lean/luci-app-k3screenctrl
