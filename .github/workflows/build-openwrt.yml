@@ -1,4 +1,5 @@
 name: Build OpenWrt
+run-name: Build openwrt for ${{inputs.device}}
 
 on:
   workflow_dispatch:
