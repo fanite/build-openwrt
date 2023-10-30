@@ -22,6 +22,14 @@ on:
         description: '网关'
         type: string
         default: '192.168.1.1'
+      source_url:
+          description: '源码地址（git仓库地址）'
+          type: string
+          default: 'https://github.com/coolsnowwolf/lede'
+      source_ver:
+          description: '源码版本（分支）'
+          type: string
+          default: 'master'
       k3_wifidriver:
         description: 'PHICOMM-K3的WIFI驱动'
         default: 'asus-dhd24'
@@ -46,8 +54,6 @@ on:
         default: true
 
 env:
-  REPO_URL: https://github.com/coolsnowwolf/lede
-  REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   TZ: Asia/Shanghai
 
@@ -80,7 +86,7 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        git clone ${{inputs.source_url}} -b ${{inputs.source_ver}} openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: Load custom feeds
