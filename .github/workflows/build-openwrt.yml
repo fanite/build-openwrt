@@ -7,7 +7,7 @@ on:
       device:
         description: '要编译的设备型号'
         required: true
-        default: 'RM2100'
+        default: 'PHICOMM-K3'
         type: choice
         options:
           - RM2100
@@ -21,7 +21,11 @@ on:
       gateway:
         description: '网关'
         type: string
-        default: '192.168.1.1'
+        default: '192.168.2.1'
+      ssid:
+          description: 'WIFI SSID'
+          type: string
+          default: 'OpenWrt'
       source_url:
           description: '源码地址（git仓库地址）'
           type: string
@@ -32,7 +36,7 @@ on:
           default: 'master'
       k3_wifidriver:
         description: 'PHICOMM-K3的WIFI驱动'
-        default: 'asus-dhd24'
+        default: 'ac88u_20'
         type: choice
         options:
           - '69027'
@@ -119,6 +123,7 @@ jobs:
         if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
 
         # 修改WIFI配置
+        sed -i 's/ssid=OpenWrt/ssid=${{inputs.ssid}}/g' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
         sed -i 's/set wireless.default_radio${devidx}.encryption=none/set wireless.default_radio${devidx}.encryption=psk-mixed/g' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
         sed -i '/default_radio${devidx}.encryption/a \                        set wireless.default_radio${devidx}.key=${{inputs.password}}\n                        set wireless.default_radio${devidx}.ieee80211k=1\n                        set wireless.default_radio${devidx}.ieee80211v=1' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
 
