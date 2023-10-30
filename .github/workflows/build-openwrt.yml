@@ -27,17 +27,17 @@ on:
         type: string
         default: 'OpenWrt'
       pppoe_username:
-        description: 'PPPOE（宽带）用户名'
+        description: 'PPPOE (宽带) 用户名'
         type: string
       pppoe_password:
-          description: 'PPPOE（宽带）密码'
+          description: 'PPPOE (宽带) 密码'
           type: string
       source_url:
-        description: '源码地址（git仓库地址）'
+        description: '源码地址 (git仓库地址)'
         type: string
         default: 'https://github.com/coolsnowwolf/lede'
       source_ver:
-        description: '源码版本（分支）'
+        description: '源码版本 (分支)'
         type: string
         default: 'master'
       k3_wifidriver:
