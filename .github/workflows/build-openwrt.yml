@@ -23,17 +23,23 @@ on:
         type: string
         default: '192.168.2.1'
       ssid:
-          description: 'WIFI SSID'
+        description: 'WIFI SSID'
+        type: string
+        default: 'OpenWrt'
+      pppoe_username:
+        description: 'PPPOE（宽带）用户名'
+        type: string
+      pppoe_password:
+          description: 'PPPOE（宽带）密码'
           type: string
-          default: 'OpenWrt'
       source_url:
-          description: '源码地址（git仓库地址）'
-          type: string
-          default: 'https://github.com/coolsnowwolf/lede'
+        description: '源码地址（git仓库地址）'
+        type: string
+        default: 'https://github.com/coolsnowwolf/lede'
       source_ver:
-          description: '源码版本（分支）'
-          type: string
-          default: 'master'
+        description: '源码版本（分支）'
+        type: string
+        default: 'master'
       k3_wifidriver:
         description: 'PHICOMM-K3的WIFI驱动'
         default: 'ac88u_20'
@@ -118,6 +124,14 @@ jobs:
 
         # 修改网关
         sed -i 's/192.168.1.1/${{inputs.gateway}}/g' openwrt/package/base-files/files/bin/config_generate
+
+        # PPPOE
+        if [[ -z "${{inputs.pppoe_username}}" && -z "${{inputs.pppoe_password}}" ]];then 
+          sed -i "/exit 0/i\uci set network.wan.username='${{inputs.pppoe_username}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+          sed -i "/exit 0/i\uci set network.wan.password='${{inputs.pppoe_password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+          sed -i "/exit 0/i\uci set network.wan.proto='pppoe'" openwrt/package/lean/default-settings/files/zzz-default-settings
+          sed -i "/exit 0/i\uci commit network" openwrt/package/lean/default-settings/files/zzz-default-settings
+        fi
 
         # 默认开启Turboacc的BBR
         if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
