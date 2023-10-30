@@ -133,11 +133,23 @@ jobs:
         if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
 
         # 修改WIFI配置
-        sed -i 's/ssid=OpenWrt/ssid=${{inputs.ssid}}/g' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
-        sed -i 's/set wireless.default_radio${devidx}.encryption=none/set wireless.default_radio${devidx}.encryption=psk-mixed/g' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
-        sed -i '/default_radio${devidx}.encryption/a \                        set wireless.default_radio${devidx}.key=${{inputs.password}}\n                        set wireless.default_radio${devidx}.ieee80211k=1\n                        set wireless.default_radio${devidx}.ieee80211v=1' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
+        sed -i "/exit 0/i\wireless.radio0.channel='7'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.radio0.htmode='HT40'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio0.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio0.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio0.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio0.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio0.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.radio1.channel='161'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.radio1.htmode='VHT160'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio1.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio1.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio1.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio1.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\wireless.default_radio1.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci commit wireless" openwrt/package/lean/default-settings/files/zzz-default-settings
 
-        if [[ ${{inputs.device}} == "PHICOMM-K3" ]]; then
+        if [[ "${{inputs.device}}" == "PHICOMM-K3" ]]; then
           # 替换WIFI驱动
           cp -f files/k3-wireless-driver/brcmfmac4366c-pcie.bin.${{inputs.k3_wifidriver}} openwrt/package/lean/k3-brcmfmac4366c-firmware/files/lib/firmware/brcm/brcmfmac4366c-pcie.bin
           # 添加lwz322的K3屏幕插件
