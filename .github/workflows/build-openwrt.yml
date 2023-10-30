@@ -54,10 +54,6 @@ on:
           - ea9500_179240
           - k3
           - r8500
-      upload_bin:
-        description: '上传BIN文件夹'
-        type: boolean
-        default: false
       upload_firmware:
         description: '上传FIRMWARE文件夹'
         type: boolean
@@ -179,13 +175,6 @@ jobs:
     - name: Check space usage
       if: (!cancelled())
       run: df -hT
-
-    - name: Upload bin directory
-      uses: actions/upload-artifact@main
-      if: steps.compile.outputs.status == 'success' && inputs.upload_bin
-      with:
-        name: OpenWrt_bin${{ steps.compile.outputs.DEVICE_NAME }}${{ steps.compile.outputs.FILE_DATE }}
-        path: openwrt/bin
 
     - name: Organize files
       id: organize
