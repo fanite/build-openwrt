@@ -122,7 +122,8 @@ jobs:
         sed -i 's/192.168.1.1/${{inputs.gateway}}/g' openwrt/package/base-files/files/bin/config_generate
 
         # PPPOE
-        if [[ ! -z "${{inputs.pppoe_username}}" && ! -z "${{inputs.pppoe_password}}" ]];then 
+        if [[ ! -z "${{inputs.pppoe_username}}" && ! -z "${{inputs.pppoe_password}}" ]];then
+          sed -i "/exit 0/i\uci set network.globals.ula_prefix=''" openwrt/package/lean/default-settings/files/zzz-default-settings
           sed -i "/exit 0/i\uci set network.wan.username='${{inputs.pppoe_username}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
           sed -i "/exit 0/i\uci set network.wan.password='${{inputs.pppoe_password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
           sed -i "/exit 0/i\uci set network.wan.proto='pppoe'" openwrt/package/lean/default-settings/files/zzz-default-settings
@@ -133,20 +134,20 @@ jobs:
         if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
 
         # 修改WIFI配置
-        sed -i "/exit 0/i\wireless.radio0.channel='7'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.radio0.htmode='HT40'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio0.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio0.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio0.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio0.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio0.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.radio1.channel='161'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.radio1.htmode='VHT160'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio1.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio1.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio1.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio1.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\wireless.default_radio1.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.radio0.channel='7'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.radio0.htmode='HT40'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio0.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio0.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio0.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio0.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio0.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.radio1.channel='161'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.radio1.htmode='VHT160'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio1.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio1.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio1.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio1.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio1.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci commit wireless" openwrt/package/lean/default-settings/files/zzz-default-settings
 
         if [[ "${{inputs.device}}" == "PHICOMM-K3" ]]; then
