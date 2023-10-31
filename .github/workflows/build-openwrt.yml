@@ -133,6 +133,9 @@ jobs:
         # 默认开启Turboacc的BBR
         if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
 
+        # 修改adguardhome,只编译二进制文件,不要配置文件
+        if grep -q "CONFIG_PACKAGE_luci-app-adguardhome_INCLUDE_binary=y" openwrt/.config; then sed -i -e "67,71d" -e "47,50d" openwrt/feeds/packages/net/adguardhome/Makefile;fi
+
         # 修改WIFI配置
         sed -i "/exit 0/i\uci set wireless.radio0.channel='7'" openwrt/package/lean/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.radio0.htmode='HT40'" openwrt/package/lean/default-settings/files/zzz-default-settings
@@ -142,7 +145,7 @@ jobs:
         sed -i "/exit 0/i\uci set wireless.default_radio0.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio0.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.radio1.channel='161'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.radio1.htmode='VHT160'" openwrt/package/lean/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.radio1.htmode='VHT80'" openwrt/package/lean/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio1.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio1.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio1.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
