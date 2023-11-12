@@ -81,6 +81,7 @@ jobs:
         git clone -b ${{inputs.source_ver}} --single-branch ${{env.SOURCE_URL}} openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cp -a $GITHUB_WORKSPACE/files/miwifi-mini/default-settings $GITHUB_WORKSPACE/openwrt/package/
+        cp -a $GITHUB_WORKSPACE/files/miwifi-mini/auto* $GITHUB_WORKSPACE/openwrt/package/
         ls -al openwrt/package/
 
 
@@ -95,38 +96,6 @@ jobs:
       run: |
         # 拷贝配置文件
         cp configs/${{inputs.device}}.config openwrt/.config
-
-        # 修改ROOT密码
-        passwd=$(openssl passwd -salt 'OR/e/lZS' ${{inputs.password}})
-        sed -i "s/root:::0:99999:7:::/root:${passwd}:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/passwd
-        sed -i "s/root:::0:99999:7:::/root:${passwd}:19633:0:99999:7:::/g" openwrt/package/base-files/files/etc/shadow
-
-        # 修改网关
-        sed -i 's/192.168.1.1/${{inputs.gateway}}/g' openwrt/package/base-files/files/bin/config_generate
-
-        # PPPOE
-        if [[ ! -z "${{inputs.pppoe_username}}" && ! -z "${{inputs.pppoe_password}}" ]];then
-          sed -i "/exit 0/i\uci set network.globals.ula_prefix=''" openwrt/package/default-settings/files/zzz-default-settings
-          sed -i "/exit 0/i\uci set network.wan.username='${{inputs.pppoe_username}}'" openwrt/package/default-settings/files/zzz-default-settings
-          sed -i "/exit 0/i\uci set network.wan.password='${{inputs.pppoe_password}}'" openwrt/package/default-settings/files/zzz-default-settings
-          sed -i "/exit 0/i\uci set network.wan.proto='pppoe'" openwrt/package/default-settings/files/zzz-default-settings
-          sed -i "/exit 0/i\uci commit network" openwrt/package/default-settings/files/zzz-default-settings
-        fi
-
-        # 默认开启Turboacc的BBR
-        if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
-
-        # 修改adguardhome,只编译二进制文件,不要配置文件
-        if grep -q "CONFIG_PACKAGE_luci-app-adguardhome_INCLUDE_binary=y" openwrt/.config; then sed -i -e "67,71d" -e "47,50d" openwrt/feeds/packages/net/adguardhome/Makefile;fi
-
-        # 修改WIFI配置
-        sed -i "/exit 0/i\uci set wireless.default_radio0.ssid='${{inputs.ssid}}_5G'" openwrt/package/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio0.encryption='psk-mixed'" openwrt/package/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio0.key='${{inputs.password}}'" openwrt/package/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio1.ssid='${{inputs.ssid}}'" openwrt/package/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio1.encryption='psk-mixed'" openwrt/package/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio1.key='${{inputs.password}}'" openwrt/package/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci commit wireless" openwrt/package/default-settings/files/zzz-default-settings
 
     - name: Download package
       id: package

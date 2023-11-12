@@ -4,7 +4,18 @@ uci set system.@system[0].timezone=CST-8
 uci set system.@system[0].zonename=Asia/Shanghai
 uci commit system
 
+sed -i 's#downloads.openwrt.org#mirrors.cloud.tencent.com/openwrt#g' /etc/opkg/distfeeds.conf
+sed -i 's/root:::0:99999:7:::/root:$1$K8d3WFe4$3nN86.esnSsi6iZzkPBj80:19673:0:99999:7:::/g' openwrt/package/base-files/files/etc/shadow
+
 sed -i '/option disabled/d' /etc/config/wireless
 sed -i '/set wireless.radio${devidx}.disabled/d' /lib/wifi/mac80211.sh
+
+sed -i "/exit 0/i\uci set wireless.default_radio0.ssid='OpenWrt_5G'" openwrt/package/default-settings/files/zzz-default-settings
+sed -i "/exit 0/i\uci set wireless.default_radio0.encryption='psk-mixed'" openwrt/package/default-settings/files/zzz-default-settings
+sed -i "/exit 0/i\uci set wireless.default_radio0.key='mn5e2kmg'" openwrt/package/default-settings/files/zzz-default-settings
+sed -i "/exit 0/i\uci set wireless.default_radio1.ssid='OpenWrt'" openwrt/package/default-settings/files/zzz-default-settings
+sed -i "/exit 0/i\uci set wireless.default_radio1.encryption='psk-mixed'" openwrt/package/default-settings/files/zzz-default-settings
+sed -i "/exit 0/i\uci set wireless.default_radio1.key='mn5e2kmg'" openwrt/package/default-settings/files/zzz-default-settings
+sed -i "/exit 0/i\uci commit wireless" openwrt/package/default-settings/files/zzz-default-settings
 
 exit 0
