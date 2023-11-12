@@ -89,12 +89,8 @@ jobs:
         df -hT $PWD
         git clone -b ${{inputs.source_ver}} --single-branch ${{env.SOURCE_URL}} openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        cp -a $GITHUB_WORKSPACE/files/miwifi-mini/default-settings $GITHUB_WORKSPACE/openwrt/packages/
 
-    - name: Load custom feeds
-      run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        echo 'src-git kenzo https://github.com/kenzok8/openwrt-packages' >>openwrt/feeds.conf.default
-        echo 'src-git small https://github.com/kenzok8/small' >>openwrt/feeds.conf.default
 
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -118,11 +114,11 @@ jobs:
 
         # PPPOE
         if [[ ! -z "${{inputs.pppoe_username}}" && ! -z "${{inputs.pppoe_password}}" ]];then
-          sed -i "/exit 0/i\uci set network.globals.ula_prefix=''" openwrt/package/lean/default-settings/files/zzz-default-settings
-          sed -i "/exit 0/i\uci set network.wan.username='${{inputs.pppoe_username}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-          sed -i "/exit 0/i\uci set network.wan.password='${{inputs.pppoe_password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-          sed -i "/exit 0/i\uci set network.wan.proto='pppoe'" openwrt/package/lean/default-settings/files/zzz-default-settings
-          sed -i "/exit 0/i\uci commit network" openwrt/package/lean/default-settings/files/zzz-default-settings
+          sed -i "/exit 0/i\uci set network.globals.ula_prefix=''" openwrt/package/default-settings/files/zzz-default-settings
+          sed -i "/exit 0/i\uci set network.wan.username='${{inputs.pppoe_username}}'" openwrt/package/default-settings/files/zzz-default-settings
+          sed -i "/exit 0/i\uci set network.wan.password='${{inputs.pppoe_password}}'" openwrt/package/default-settings/files/zzz-default-settings
+          sed -i "/exit 0/i\uci set network.wan.proto='pppoe'" openwrt/package/default-settings/files/zzz-default-settings
+          sed -i "/exit 0/i\uci commit network" openwrt/package/default-settings/files/zzz-default-settings
         fi
 
         # 默认开启Turboacc的BBR
@@ -132,36 +128,14 @@ jobs:
         if grep -q "CONFIG_PACKAGE_luci-app-adguardhome_INCLUDE_binary=y" openwrt/.config; then sed -i -e "67,71d" -e "47,50d" openwrt/feeds/packages/net/adguardhome/Makefile;fi
 
         # 修改WIFI配置
-        sed -i "/exit 0/i\uci set wireless.radio0.channel='7'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.radio0.htmode='HT40'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio0.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio0.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio0.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio0.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio0.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.radio1.channel='161'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.radio1.htmode='VHT80'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio1.ssid='${{inputs.ssid}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio1.encryption='psk-mixed'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio1.key='${{inputs.password}}'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio1.ieee80211k='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.default_radio1.ieee80211v='1'" openwrt/package/lean/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci commit wireless" openwrt/package/lean/default-settings/files/zzz-default-settings
-
-        if [[ "${{inputs.device}}" == "PHICOMM-K3" ]]; then
-          # 替换WIFI驱动
-          cp -f files/k3-wireless-driver/brcmfmac4366c-pcie.bin.${{inputs.k3_wifidriver}} openwrt/package/lean/k3-brcmfmac4366c-firmware/files/lib/firmware/brcm/brcmfmac4366c-pcie.bin
-          # 添加lwz322的K3屏幕插件
-          rm -rf openwrt/package/lean/luci-app-k3screenctrl
-          git clone https://github.com/yangxu52/luci-app-k3screenctrl.git openwrt/package/lean/luci-app-k3screenctrl
-          # 替换lwz322的K3屏幕驱动插件
-          rm -rf openwrt/package/lean/k3screenctrl
-          git clone https://github.com/yangxu52/k3screenctrl_build.git openwrt/package/lean/k3screenctrl/
-          sed -i 's/k3screenctrl$/k3screenctrl luci-app-k3screenctrl/' openwrt/target/linux/bcm53xx/image/Makefile
-          # 移除bcm53xx中的其他机型
-          sed -i '421,453d' openwrt/target/linux/bcm53xx/image/Makefile
-          sed -i '140,412d' openwrt/target/linux/bcm53xx/image/Makefile
-        fi
+        sed -i "/exit 0/i\uci set wireless.default_radio0.ssid='${{inputs.ssid}}'" openwrt/package/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio0.encryption='psk-mixed'" openwrt/package/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio0.key='${{inputs.password}}'" openwrt/package/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.radio1.htmode='VHT80'" openwrt/package/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio1.ssid='${{inputs.ssid}}'" openwrt/package/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio1.encryption='psk-mixed'" openwrt/package/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio1.key='${{inputs.password}}'" openwrt/package/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci commit wireless" openwrt/package/default-settings/files/zzz-default-settings
 
     - name: Download package
       id: package
