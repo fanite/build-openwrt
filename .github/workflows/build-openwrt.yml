@@ -59,7 +59,6 @@ jobs:
 
     - name: Initialization environment
       run: |
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq -y update  
         sudo -E apt-get -qq -y install openssl binutils bzip2 diff find flex gawk gcc-6+ getopt grep install libc-dev libz-dev make perl python3.6 rsync subversion unzip which
         sudo -E apt-get -qq autoremove --purge
@@ -114,10 +113,9 @@ jobs:
         if grep -q "CONFIG_PACKAGE_luci-app-adguardhome_INCLUDE_binary=y" openwrt/.config; then sed -i -e "67,71d" -e "47,50d" openwrt/feeds/packages/net/adguardhome/Makefile;fi
 
         # 修改WIFI配置
-        sed -i "/exit 0/i\uci set wireless.default_radio0.ssid='${{inputs.ssid}}'" openwrt/package/default-settings/files/zzz-default-settings
+        sed -i "/exit 0/i\uci set wireless.default_radio0.ssid='${{inputs.ssid}}_5G'" openwrt/package/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio0.encryption='psk-mixed'" openwrt/package/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio0.key='${{inputs.password}}'" openwrt/package/default-settings/files/zzz-default-settings
-        sed -i "/exit 0/i\uci set wireless.radio1.htmode='VHT80'" openwrt/package/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio1.ssid='${{inputs.ssid}}'" openwrt/package/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio1.encryption='psk-mixed'" openwrt/package/default-settings/files/zzz-default-settings
         sed -i "/exit 0/i\uci set wireless.default_radio1.key='${{inputs.password}}'" openwrt/package/default-settings/files/zzz-default-settings
