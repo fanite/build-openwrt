@@ -80,7 +80,7 @@ jobs:
         df -hT $PWD
         git clone -b ${{inputs.source_ver}} --single-branch ${{env.SOURCE_URL}} openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-        cp -a ../files/miwifi-mini/default-settings openwrt/packages/
+        cp -a $GITHUB_WORKSPACE/files/miwifi-mini/default-settings $GITHUB_WORKSPACE/openwrt/packages/
         ls -al openwrt/packages/
 
 
