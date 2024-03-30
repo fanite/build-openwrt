@@ -1,129 +1,141 @@
-name: Build WSA
+name: Build OpenWrt
+run-name: Build openwrt ${{inputs.source_ver}} for ${{inputs.device}}
 
 on:
   workflow_dispatch:
     inputs:
-      arch:
-        description: "Build arch"
+      device:
+        description: '要编译的设备型号'
         required: true
-        default: "x64 & arm64"
+        default: 'PHICOMM-K3'
         type: choice
         options:
-        - x64
-        - arm64
-        - x64 & arm64
-      release_type:
-        description: "WSA release type"
-        required: true
-        default: "retail"
-        type: choice
-        options:
-        - retail
-        - RP
-        - WIS
-        - WIF
-      magisk_apk:
-        description: "Magisk version"
-        required: true
-        default: "stable"
-        type: choice
-        options:
-        - stable
-        - release
-        - beta
-        - canary
-        - debug
-      gapps_variant:
-        description: "Variants of gapps"
-        required: true
-        default: "pico"
-        type: choice
-        options:
-        - none
-        - super
-        - stock
-        - full
-        - mini
-        - micro
-        - nano
-        - pico
-        - tvstock
-        - tvmini
-      remove_amazon:
-        description: "Remove Amazon AppStore"
-        required: true
-        default: "yes"
-        type: choice
-        options:
-        - yes
-        - no
-      root_sol:
-        description: "Root solution"
-        required: true
-        default: "magisk"
-        type: choice
-        options:
-        - magisk
-        - kernelsu
-        - none
-jobs:
-  matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Generate build matrix
-        id: set-matrix
-        uses: actions/github-script@v6
-        with:
-          script: |
-            let matrix = {};
-            let arch = "${{ github.event.inputs.arch }}"
-            switch ( arch ) {
-              case "x64":
-                matrix.arch = ["x64"];
-                break;
-              case "arm64":
-                matrix.arch = ["arm64"];
-                break;
-              default:
-                matrix.arch = ["x64", "arm64"];
-                break;
-            }
-            core.setOutput("matrix",JSON.stringify(matrix));
+          - RM2100
+          - RM2100-MT
+          - MI-MINI
+          - PHICOMM-K3
+      password:
+        description: '登录密码和WiFi密码。'
+        type: string
+        default: 'password'
+      gateway:
+        description: '网关'
+        type: string
+        default: '192.168.2.1'
+      ssid:
+        description: 'WIFI SSID'
+        type: string
+        default: 'OpenWrt'
+      pppoe_username:
+        description: 'PPPOE (宽带) 用户名'
+        type: string
+      pppoe_password:
+          description: 'PPPOE (宽带) 密码'
+          type: string
+      source_ver:
+        description: '源码版本 (分支)'
+        type: string
+        default: 'v23.05.1'
+      upload_bin:
+        description: '上传BIN文件夹'
+        type: boolean
+        default: false
+      upload_firmware:
+        description: '上传FIRMWARE文件夹'
+        type: boolean
+        default: true
 
+env:
+  SOURCE_URL: https://github.com/openwrt/openwrt.git
+  FEEDS_CONF: feeds.conf.default
+  TZ: Asia/Shanghai
+
+jobs:
   build:
-    runs-on: ubuntu-latest
-    needs: matrix
-    strategy:
-      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
-      
-      - id: build
-        name: build wsa
-        env:
-          ARCH: ${{ matrix.arch }}
-          RELEASE_TYPE: ${{ github.event.inputs.release_type }}
-          MAGISK_VER: ${{ github.event.inputs.magisk_apk }}
-          GAPPS_VARIANT: ${{ github.event.inputs.gapps_variant }}
-          REMOVE_AMAZON: ${{ github.event.inputs.remove_amazon }}
-          ROOT_SOL: ${{ github.event.inputs.root_sol }}
-        run: |
-          ./scripts/install_deps.sh || exit 1
-          ./scripts/build.sh --arch ${ARCH} --release-type ${RELEASE_TYPE} --gapps-variant ${GAPPS_VARIANT} --root-sol ${ROOT_SOL}  --remove-amazon ${REMOVE_AMAZON}  --nofix-props
-          path=$(find ./output -name "*.7z"|head -n 1)
-          echo "##[set-output name=path;]$path"
-          echo "##[set-output name=name;]$(basename $path)"
-          echo "::set-output name=status::success"
-          
-      - id: vars
-        run: |
-          echo "::set-output name=sha_short::$(git rev-parse --short "$GITHUB_SHA")"
-      
-      - name: upload artifact
-        uses: actions/upload-artifact@main
-        if: steps.build.outputs.status == 'success'
-        with:
-          name: ${{ steps.build.outputs.name }}
-          path: ${{ steps.build.outputs.path }}
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Initialization environment
+      run: |
+        sudo -E apt-get -qq -y update  
+        sudo -E apt-get -qq -y install openssl build-essential clang flex bison g++ gawk \
+                                      gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev \
+                                      python3-distutils rsync unzip zlib1g-dev file wget
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+        
+
+    - name: Clone source code
+      working-directory: /workdir
+      run: |
+        df -hT $PWD
+        git clone -b ${{inputs.source_ver}} --single-branch ${{env.SOURCE_URL}} openwrt
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        cp -a $GITHUB_WORKSPACE/files/miwifi-mini/default-settings $GITHUB_WORKSPACE/openwrt/package/
+        cp -a $GITHUB_WORKSPACE/files/miwifi-mini/auto* $GITHUB_WORKSPACE/openwrt/package/
+        ls -al openwrt/package/
+
+
+    - name: Update feeds
+      run: cd openwrt && ./scripts/feeds update -a
+
+    - name: Install feeds
+      run: |
+        cd openwrt && ./scripts/feeds install -a
+
+    - name: Load custom configuration
+      run: |
+        # 拷贝配置文件
+        cp configs/${{inputs.device}}.config openwrt/.config
+
+    - name: Download package
+      id: package
+      run: |
+        cd openwrt
+        make defconfig
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: Compile the firmware
+      id: compile
+      run: |
+        cd openwrt
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 || make -j1 V=s
+        echo "status=success" >> $GITHUB_OUTPUT
+        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
+        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_OUTPUT
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_OUTPUT
+
+    - name: Check space usage
+      if: (!cancelled())
+      run: df -hT
+
+    - name: 上传bin目录
+      uses: actions/upload-artifact@main
+      if: steps.compile.outputs.status == 'success' && ${{inputs.upload_bin}}
+      with:
+        name: OpenWrt_bin${{ steps.compile.outputs.DEVICE_NAM }}_${{inputs.source_ver}}${{ steps.compile.outputs.FILE_DATE }}
+        path: openwrt/bin
+
+    - name: Organize files
+      id: organize
+      if: inputs.upload_firmware && !cancelled()
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> $GITHUB_OUTPUT
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@main
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt_firmware${{ steps.compile.outputs.DEVICE_NAME }}_${{inputs.source_ver}}${{ steps.compile.outputs.FILE_DATE }}
+        path: ${{ steps.organize.outputs.FIRMWARE }}

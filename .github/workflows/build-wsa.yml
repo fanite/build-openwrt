@@ -1,0 +1,129 @@
+name: Build WSA
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: "Build arch"
+        required: true
+        default: "x64 & arm64"
+        type: choice
+        options:
+        - x64
+        - arm64
+        - x64 & arm64
+      release_type:
+        description: "WSA release type"
+        required: true
+        default: "retail"
+        type: choice
+        options:
+        - retail
+        - RP
+        - WIS
+        - WIF
+      magisk_apk:
+        description: "Magisk version"
+        required: true
+        default: "stable"
+        type: choice
+        options:
+        - stable
+        - release
+        - beta
+        - canary
+        - debug
+      gapps_variant:
+        description: "Variants of gapps"
+        required: true
+        default: "pico"
+        type: choice
+        options:
+        - none
+        - super
+        - stock
+        - full
+        - mini
+        - micro
+        - nano
+        - pico
+        - tvstock
+        - tvmini
+      remove_amazon:
+        description: "Remove Amazon AppStore"
+        required: true
+        default: "yes"
+        type: choice
+        options:
+        - yes
+        - no
+      root_sol:
+        description: "Root solution"
+        required: true
+        default: "magisk"
+        type: choice
+        options:
+        - magisk
+        - kernelsu
+        - none
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Generate build matrix
+        id: set-matrix
+        uses: actions/github-script@v6
+        with:
+          script: |
+            let matrix = {};
+            let arch = "${{ github.event.inputs.arch }}"
+            switch ( arch ) {
+              case "x64":
+                matrix.arch = ["x64"];
+                break;
+              case "arm64":
+                matrix.arch = ["arm64"];
+                break;
+              default:
+                matrix.arch = ["x64", "arm64"];
+                break;
+            }
+            core.setOutput("matrix",JSON.stringify(matrix));
+
+  build:
+    runs-on: ubuntu-latest
+    needs: matrix
+    strategy:
+      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - id: build
+        name: build wsa
+        env:
+          ARCH: ${{ matrix.arch }}
+          RELEASE_TYPE: ${{ github.event.inputs.release_type }}
+          MAGISK_VER: ${{ github.event.inputs.magisk_apk }}
+          GAPPS_VARIANT: ${{ github.event.inputs.gapps_variant }}
+          REMOVE_AMAZON: ${{ github.event.inputs.remove_amazon }}
+          ROOT_SOL: ${{ github.event.inputs.root_sol }}
+        run: |
+          ./scripts/install_deps.sh || exit 1
+          ./scripts/build.sh --arch ${ARCH} --release-type ${RELEASE_TYPE} --gapps-variant ${GAPPS_VARIANT} --root-sol ${ROOT_SOL}  --remove-amazon ${REMOVE_AMAZON}  --nofix-props
+          path=$(find ./output -name "*.7z"|head -n 1)
+          echo "##[set-output name=path;]$path"
+          echo "##[set-output name=name;]$(basename $path)"
+          echo "::set-output name=status::success"
+          
+      - id: vars
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short "$GITHUB_SHA")"
+      
+      - name: upload artifact
+        uses: actions/upload-artifact@main
+        if: steps.build.outputs.status == 'success'
+        with:
+          name: ${{ steps.build.outputs.name }}
+          path: ${{ steps.build.outputs.path }}
