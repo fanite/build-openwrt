@@ -78,7 +78,6 @@ jobs:
         cp -a $GITHUB_WORKSPACE/files/miwifi-mini/auto* $GITHUB_WORKSPACE/openwrt/package/
         ls -al openwrt/package/
 
-
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
 
@@ -90,6 +89,10 @@ jobs:
       run: |
         # 拷贝配置文件
         cp configs/${{inputs.device}}.config openwrt/.config
+
+    - name: Git patch
+      run: |
+        cp -a files/patches/23621-pf-ring-error-fix.patch openwrt/feeds/packages/libs/libpfring/patches/
 
     - name: Download package
       id: package
