@@ -1,9 +1,9 @@
 #!/bin/sh
 
-[ "$(uci -q get system.@system[0].hostname)" = 'phicomm-k3' ] && exit 0
+[ "$(uci -q get system.@system[0].hostname)" = 'Phicomm-K3' ] && exit 0
 
 uci -q batch << 'EOI' || exit $?
-set system.@system[0].hostname='phicomm-k3'
+set system.@system[0].hostname='Phicomm-K3'
 commit system
 
 set system.@system[0].timezone=CST-8
