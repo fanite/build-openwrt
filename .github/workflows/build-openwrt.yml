@@ -76,7 +76,15 @@ jobs:
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cp -a $GITHUB_WORKSPACE/files/miwifi-mini/default-settings $GITHUB_WORKSPACE/openwrt/package/
         cp -a $GITHUB_WORKSPACE/files/miwifi-mini/auto* $GITHUB_WORKSPACE/openwrt/package/
-        ls -al openwrt/package/
+        # 替换lwz322的K3屏幕驱动
+        if [[ "${{inputs.device}}" == "PHICOMM-K3" ]]; then
+          rm -rf openwrt/package/luci-app-k3screenctrl
+          git clone https://github.com/yangxu52/luci-app-k3screenctrl.git openwrt/package/luci-app-k3screenctrl
+          # 替换lwz322的K3屏幕驱动插件
+          rm -rf openwrt/package/k3screenctrl
+          git clone https://github.com/yangxu52/k3screenctrl_build.git openwrt/package/k3screenctrl/
+          sed -i 's/k3screenctrl$/k3screenctrl luci-app-k3screenctrl/' openwrt/target/linux/bcm53xx/image/Makefile
+        fi
 
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -89,10 +97,30 @@ jobs:
       run: |
         # 拷贝配置文件
         cp configs/${{inputs.device}}.config openwrt/.config
+    
+        # 修改网关
+        sed -i 's/192.168.1.1/${{inputs.gateway}}/g' openwrt/package/base-files/files/bin/config_generate
+
+        # 默认开启Turboacc的BBR
+        if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
+
+        # 修改adguardhome,只编译二进制文件,不要配置文件
+        if grep -q "CONFIG_PACKAGE_luci-app-adguardhome_INCLUDE_binary=y" openwrt/.config; then sed -i -e "67,71d" -e "47,50d" openwrt/feeds/packages/net/adguardhome/Makefile;fi
+
+        # 自定义配置
+        cp -f files/uci-defaults/100_custom_settings openwrt/package/base-files/files/etc/uci-defaults
+        sed -i "s/wireless.default_radio0.ssid='OpenWrt_5G'/wireless.default_radio0.ssid='${{inputs.ssid}}_5G'/g" openwrt/package/base-files/files/etc/uci-defaults/100_custom_settings
+        sed -i "s/wireless.default_radio0.key='mn5e2kmg'/wireless.default_radio0.key='${{inputs.password}}'/g" openwrt/package/base-files/files/etc/uci-defaults/100_custom_settings
+        sed -i "s/wireless.default_radio1.ssid='OpenWrt'/wireless.default_radio1.ssid='${{inputs.ssid}}'/g" openwrt/package/base-files/files/etc/uci-defaults/100_custom_settings
+        sed -i "s/wireless.default_radio1.key='mn5e2kmg'/wireless.default_radio1.key='${{inputs.password}}'/g" openwrt/package/base-files/files/etc/uci-defaults/100_custom_settings
 
     - name: Git patch
       run: |
-        cp -a files/patches/23621-pf-ring-error-fix.patch openwrt/feeds/packages/libs/libpfring/patches/
+        if [[ "${{inputs.source_ver}}" == "v23.05.3" ]]; then
+          echo "修复libpfring"
+          curl -s -L --retry 6 https://github.com/openwrt/packages/commit/534bd518f3fff6c31656a1edcd7e10922f3e06e5.patch  | patch -p1 -d openwrt/feeds/packages 2>/dev/null
+          curl -s -L --retry 6 https://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865.patch  | patch -p1 -d openwrt/feeds/packages 2>/dev/null
+        fi
 
     - name: Download package
       id: package

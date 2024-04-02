@@ -1,0 +1,23 @@
+#!/bin/sh
+
+[ "$(uci -q get system.@system[0].hostname)" = 'phicomm-k3' ] && exit 0
+
+uci -q batch << 'EOI' || exit $?
+set system.@system[0].hostname='phicomm-k3'
+commit system
+
+set system.@system[0].timezone=CST-8
+set system.@system[0].zonename=Asia/Shanghai
+commit system
+
+del wireless.radio0.disabled
+set wireless.default_radio0.ssid='OpenWrt_5G'
+set wireless.default_radio0.encryption='psk-mixed'
+set wireless.default_radio0.key='mn5e2kmg'
+
+del wireless.radio1.disabled
+set wireless.default_radio1.ssid='OpenWrt'
+set wireless.default_radio1.encryption='psk-mixed'
+set wireless.default_radio1.key='mn5e2kmg'
+commit wireless
+EOI
