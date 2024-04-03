@@ -107,6 +107,7 @@ jobs:
 
         # 多播
         if grep -q "CONFIG_PACKAGE_luci-app-syncdial=y" openwrt/.config;then
+          ls -al ./
           cp -a coolsnowwolf_luci/applications/luci-app-syncdial openwrt/feeds/luci/applications/luci-app-syncdial
           ln -s ../../../feeds/luci/applications/luci-app-syncdial luci-app-syncdial
         fi
