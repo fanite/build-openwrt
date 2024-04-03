@@ -75,6 +75,7 @@ jobs:
         git clone -b ${{inputs.source_ver}} --single-branch ${{env.SOURCE_URL}} openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         git clone --depth=1 https://github.com/coolsnowwolf/luci coolsnowwolf_luci
+        ln -sf /workdir/coolsnowwolf_luci $GITHUB_WORKSPACE/coolsnowwolf_luci
         # 替换lwz322的K3屏幕驱动
         if [[ "${{inputs.device}}" == "PHICOMM-K3" ]]; then
           rm -rf openwrt/package/luci-app-k3screenctrl
@@ -107,7 +108,6 @@ jobs:
 
         # 多播
         if grep -q "CONFIG_PACKAGE_luci-app-syncdial=y" openwrt/.config;then
-          ls -al ./
           cp -a coolsnowwolf_luci/applications/luci-app-syncdial openwrt/feeds/luci/applications/luci-app-syncdial
           ln -s ../../../feeds/luci/applications/luci-app-syncdial luci-app-syncdial
         fi
