@@ -74,8 +74,7 @@ jobs:
         df -hT $PWD
         git clone -b ${{inputs.source_ver}} --single-branch ${{env.SOURCE_URL}} openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-        cp -a $GITHUB_WORKSPACE/files/miwifi-mini/default-settings $GITHUB_WORKSPACE/openwrt/package/
-        cp -a $GITHUB_WORKSPACE/files/miwifi-mini/auto* $GITHUB_WORKSPACE/openwrt/package/
+        git clone --depth=1 https://github.com/coolsnowwolf/luci coolsnowwolf_luci
         # 替换lwz322的K3屏幕驱动
         if [[ "${{inputs.device}}" == "PHICOMM-K3" ]]; then
           rm -rf openwrt/package/luci-app-k3screenctrl
@@ -86,12 +85,11 @@ jobs:
           sed -i 's/k3screenctrl$/k3screenctrl luci-app-k3screenctrl/' openwrt/target/linux/bcm53xx/image/Makefile
         fi
 
-    - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
-
-    - name: Install feeds
+    - name: Update & Install feeds
       run: |
-        cd openwrt && ./scripts/feeds install -a
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
 
     - name: Load custom configuration
       run: |
@@ -106,6 +104,12 @@ jobs:
 
         # 修改adguardhome,只编译二进制文件,不要配置文件
         if grep -q "CONFIG_PACKAGE_luci-app-adguardhome_INCLUDE_binary=y" openwrt/.config; then sed -i -e "67,71d" -e "47,50d" openwrt/feeds/packages/net/adguardhome/Makefile;fi
+
+        # 多播
+        if grep -q "CONFIG_PACKAGE_luci-app-syncdial=y" openwrt/.config;then
+          cp -a coolsnowwolf_luci/applications/luci-app-syncdial openwrt/feeds/luci/applications/luci-app-syncdial
+          ln -s ../../../feeds/luci/applications/luci-app-syncdial luci-app-syncdial
+        fi
 
         # 自定义配置
         cp -f files/uci-defaults/100_custom_settings openwrt/package/base-files/files/etc/uci-defaults
