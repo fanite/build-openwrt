@@ -101,10 +101,10 @@ jobs:
         sed -i 's/192.168.1.1/${{inputs.gateway}}/g' openwrt/package/base-files/files/bin/config_generate
 
         # 默认开启Turboacc的BBR
-        if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
+        # if grep -q "CONFIG_PACKAGE_luci-app-turboacc=y" openwrt/.config;then sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" openwrt/package/feeds/luci/luci-app-turboacc/root/etc/config/turboacc;fi
 
         # 修改adguardhome,只编译二进制文件,不要配置文件
-        if grep -q "CONFIG_PACKAGE_luci-app-adguardhome_INCLUDE_binary=y" openwrt/.config; then sed -i -e "67,71d" -e "47,50d" openwrt/feeds/packages/net/adguardhome/Makefile;fi
+        # if grep -q "CONFIG_PACKAGE_luci-app-adguardhome_INCLUDE_binary=y" openwrt/.config; then sed -i -e "67,71d" -e "47,50d" openwrt/feeds/packages/net/adguardhome/Makefile;fi
 
         # 多播
         if grep -q "CONFIG_PACKAGE_luci-app-syncdial=y" openwrt/.config;then
