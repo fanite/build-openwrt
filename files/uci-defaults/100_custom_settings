@@ -11,7 +11,7 @@ set system.@system[0].zonename=Asia/Shanghai
 commit system
 
 del wireless.radio0.disabled
-set wireless.default_radio0.ssid='OpenWrt_5G'
+set wireless.default_radio0.ssid='OpenWrt-5G'
 set wireless.default_radio0.encryption='psk-mixed'
 set wireless.default_radio0.key='mn5e2kmg'
 
